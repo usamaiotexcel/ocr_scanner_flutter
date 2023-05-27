@@ -24,7 +24,12 @@ class _MyWidgetState extends State<MyWidget> {
   String TEXT = '';
   String TEXT2 = '';
   String TEXT3 = '';
-  File? _selectedFile = null, _selectedFile2 = null, _selectedFile3 = null;
+  String TEXT4 = '';
+  String TEXT5 = '';
+  File? _selectedFile = null,
+      _selectedFile2 = null,
+      _selectedFile3 = null,
+      _selectedFile4 = null;
   List<CopyRightedPdfData> _pdfData = [];
 
   @override
@@ -42,8 +47,8 @@ class _MyWidgetState extends State<MyWidget> {
           return AlertDialog(
             title: Column(
               children: [
-                const Text('Extracted text from pdf,'),
-                Text("pdf pages count:${_pagecount.toString()}."),
+                const Text('Extracted Text From Pdf,'),
+                Text("Pdf pages count:${_pagecount.toString()}."),
               ],
             ),
             content: Scrollbar(
@@ -90,16 +95,15 @@ class _MyWidgetState extends State<MyWidget> {
 //Extract all the text from the document.
     String text = extractor.extractText();
     TEXT = text;
-    print('end');
 
 //Display the text.
     _showResult(text);
 
     if (pageCount > 0) {
       setState(() {
-        _selectedFile = _pdfData[0].name as File?;
+        _selectedFile = _pdfData[0].name.toString() as File;
         // print('@@@@@PageCount of the pdf:$_pagecount');
-        print('########Extracted Text from pdf:${text}');
+        // print('@@@@@ Extracted Text from Database:${text}');
         _pagecount = pageCount;
       });
     } else {
@@ -201,6 +205,60 @@ class _MyWidgetState extends State<MyWidget> {
     }
   }
 
+  dynamic getFiles4(type) async {
+    bool isPermissionGranted = await getStorageAccess();
+    if (isPermissionGranted) {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: type == 'pdf' ? ['pdf'] : ['jpg', 'jpeg', 'png'],
+      );
+      if (result != null) {
+        List<File> files =
+            result.paths.map((path) => File(path.toString())).toList();
+        List<String> paths = [];
+        for (var i = 0; i < files.length; i++) {
+          paths.add(files[i].path);
+        }
+
+        if (type == 'pdf') {
+          PdfDocument document =
+              PdfDocument(inputBytes: File(paths[0]).readAsBytesSync());
+          int pageCount = document.pages.count;
+          PdfTextExtractor extractor = PdfTextExtractor(document);
+          String pagesFullyMatched = '', pagesNotMatched = '';
+          for (int i = 0; i < pageCount; i++) {
+            String text = extractor.extractText(startPageIndex: i);
+            if (TEXT.contains(text)) {
+              pagesFullyMatched = pagesFullyMatched + (i + 1).toString() + ', ';
+            } else {
+              pagesNotMatched = pagesNotMatched + (i + 1).toString() + ', ';
+            }
+          }
+//Extract all the text from the document.
+
+          TEXT4 = 'Pages Fully Matched: ${pagesFullyMatched}';
+          TEXT5 = 'Pages Not Matched: ${pagesNotMatched}';
+
+//Display the text.
+          // _showResult(text);
+
+          if (pageCount > 0) {
+            setState(() {
+              _selectedFile4 = File(paths[0]);
+              // print('@@@@@PageCount of the pdf:$_pagecount');
+              // print('########Extracted Text from pdf:${text}');
+              _pagecount = pageCount;
+            });
+          } else {
+            //TODO: Pop up <Please select another file>
+          }
+        } else {
+          setState(() {});
+        }
+      }
+    }
+  }
+
   void reset() {
     setState(() {
       _selectedFile = null;
@@ -212,6 +270,36 @@ class _MyWidgetState extends State<MyWidget> {
     });
   }
 
+  checkStringEquality(String string1, String string2) {
+    if (string1 == string2) {
+      print('text are identical');
+    } else {
+      // Compare strings using relevant comparison techniques
+      // For example, you can use the Levenshtein distance algorithm
+      double similarityPercentage = calculateSimilarity(string1, string2);
+
+      if (similarityPercentage > 0.8) {
+        print('text are relevant');
+      } else {
+        print('text are not the same or relevant');
+      }
+    }
+  }
+
+  double calculateSimilarity(String string1, String string2) {
+    // Implement a string comparison algorithm here
+    // For example, you can use the Levenshtein distance algorithm
+    // to calculate the similarity percentage between the two strings
+    // There are also other algorithms and libraries available for string comparison
+
+    // Placeholder implementation that compares the lengths of the strings
+    double similarity = (string1.length <= string2.length)
+        ? string1.length / string2.length
+        : string2.length / string1.length;
+
+    return similarity;
+  }
+
   Future<void> getPdfData() async {
     final url =
         Uri.parse('http://192.168.0.173:8081/api/printables/copyrighted_data/');
@@ -219,8 +307,7 @@ class _MyWidgetState extends State<MyWidget> {
       'Content-type': 'application/json',
       'Accept': 'application/json',
     });
-    // print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
-    // print('voucher list ${res.body}');
+
     final data = json.decode(res.body) as List<dynamic>;
     List<CopyRightedPdfData> PdfData = [];
 
@@ -228,7 +315,6 @@ class _MyWidgetState extends State<MyWidget> {
       PdfData.add(CopyRightedPdfData.fromJson(data[i]));
     }
     setState(() {
-      print("LENNNNNN:${PdfData.length}");
       print("FILEEEEE:${PdfData[0].file}");
       _pdfData = PdfData;
     });
@@ -239,7 +325,7 @@ class _MyWidgetState extends State<MyWidget> {
     return Scaffold(
       appBar: AppBar(
         flexibleSpace: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [Colors.black, Colors.black],
               begin: Alignment.bottomCenter,
@@ -247,7 +333,7 @@ class _MyWidgetState extends State<MyWidget> {
             ),
           ),
         ),
-        title: Text('Gradient AppBar'),
+        title: const Text('Gradient AppBar'),
       ),
       body: Container(
         color: Colors.white,
@@ -281,8 +367,8 @@ class _MyWidgetState extends State<MyWidget> {
                   child: Text(
                     _selectedFile == null
                         ? ''
-                        : "Database pdf=>${_pdfData[0].name}",
-                    style: TextStyle(color: Colors.green),
+                        : "Database pdf=>${_pdfData[0].file}",
+                    style: const TextStyle(color: Colors.green),
                   ),
                 ),
                 const SizedBox(
@@ -290,7 +376,7 @@ class _MyWidgetState extends State<MyWidget> {
                 ),
                 NeoPopTiltedButton(
                     isFloating: false,
-                    onTapUp: () => getFiles1('pdf'),
+                    onTapUp: () => getFiles4('pdf'),
                     decoration: const NeoPopTiltedButtonDecoration(
                         color: Colors.black,
                         plunkColor: Colors.green,
@@ -310,10 +396,10 @@ class _MyWidgetState extends State<MyWidget> {
                 Container(
                   decoration: BoxDecoration(border: Border.all(width: 2)),
                   child: Text(
-                      _selectedFile2 == null
+                      _selectedFile4 == null
                           ? ''
-                          : "Teacher pdf=>${_selectedFile2!.path.split("/").last.toString()}",
-                      style: TextStyle(color: Colors.green)),
+                          : "Teacher\'s pdf=>${_selectedFile4!.path.split("/").last.toString()}",
+                      style: const TextStyle(color: Colors.green)),
                 ),
                 const SizedBox(
                   height: 10,
@@ -370,16 +456,23 @@ class _MyWidgetState extends State<MyWidget> {
                 const SizedBox(
                   height: 20,
                 ),
-                if (TEXT.contains(TEXT2))
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                            border: Border.all(width: 3, color: Colors.red)),
-                        child: const Text('100% Same Content',
-                            style: TextStyle(color: Colors.red))),
-                  ),
+                // if (TEXT.contains(TEXT2))
+                //   Padding(
+                //     padding: const EdgeInsets.all(8.0),
+                //     child: Container(
+                //         padding: const EdgeInsets.all(10),
+                //         decoration: BoxDecoration(
+                //             border: Border.all(width: 3, color: Colors.red)),
+                //         child: const Text('100% Same Content',
+                //             style: TextStyle(color: Colors.red))),
+                //   ),
+                Text(TEXT4),
+                Text(TEXT5),
+                Column(children: [
+                  Container(
+                    child: checkStringEquality(TEXT, TEXT2),
+                  )
+                ]),
               ],
             ),
           ),
