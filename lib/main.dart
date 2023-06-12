@@ -17,6 +17,8 @@ import 'package:neopop/neopop.dart';
 
 import 'package:http/http.dart' as http;
 import './copyRightedPdfData.dart';
+import 'package:pretty_diff_text/pretty_diff_text.dart';
+import 'package:string_similarity/string_similarity.dart';
 
 void main() {
   runApp(const MyApp());
@@ -49,21 +51,21 @@ class _MyHomePageState extends State<MyHomePage> {
   int _pagecount = 0;
   String TEXT = '';
   String TEXT2 = '';
-  String TEXT3 = '';
   String TEXT4 = '';
   String TEXT5 = '';
+  String Percent = '';
   File? _selectedFile = null,
       _selectedFile2 = null,
       _selectedFile3 = null,
       _selectedFile4 = null;
   List<CopyRightedPdfData> _pdfData = [];
+  CopyRightedPdfData? selected;
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     getPdfData();
-    // getPdfBytes();
   }
 
   void _showResult(String text) {
@@ -122,7 +124,8 @@ class _MyHomePageState extends State<MyHomePage> {
     String text = extractor.extractText();
     TEXT = text;
 
-//Display the text.
+    print('TEXT:$TEXT');
+
     _showResult(text);
 
     if (pageCount > 0) {
@@ -134,100 +137,6 @@ class _MyHomePageState extends State<MyHomePage> {
       });
     } else {
       //TODO: Pop up <Please select another file>
-    }
-  }
-  //     }
-  //   }
-  // }
-
-  dynamic getFiles1(type) async {
-    bool isPermissionGranted = await getStorageAccess();
-    if (isPermissionGranted) {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: type == 'pdf' ? ['pdf'] : ['jpg', 'jpeg', 'png'],
-      );
-      if (result != null) {
-        List<File> files =
-            result.paths.map((path) => File(path.toString())).toList();
-        List<String> paths = [];
-        for (var i = 0; i < files.length; i++) {
-          paths.add(files[i].path);
-        }
-
-        if (type == 'pdf') {
-          PdfDocument document =
-              PdfDocument(inputBytes: File(paths[0]).readAsBytesSync());
-          int pageCount = document.pages.count;
-          PdfTextExtractor extractor = PdfTextExtractor(document);
-
-//Extract all the text from the document.
-          String text = extractor.extractText();
-          TEXT2 = text;
-
-//Display the text.
-          _showResult(text);
-
-          if (pageCount > 0) {
-            setState(() {
-              _selectedFile2 = File(paths[0]);
-              // print('@@@@@PageCount of the pdf:$_pagecount');
-              // print('########Extracted Text from pdf:${text}');
-              _pagecount = pageCount;
-            });
-          } else {
-            //TODO: Pop up <Please select another file>
-          }
-        } else {
-          setState(() {});
-        }
-      }
-    }
-  }
-
-  // for extract cover page from pdf
-  dynamic getFiles2(type) async {
-    bool isPermissionGranted = await getStorageAccess();
-    if (isPermissionGranted) {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: type == 'pdf' ? ['pdf'] : ['jpg', 'jpeg', 'png'],
-      );
-      if (result != null) {
-        List<File> files =
-            result.paths.map((path) => File(path.toString())).toList();
-        List<String> paths = [];
-        for (var i = 0; i < files.length; i++) {
-          paths.add(files[i].path);
-        }
-
-        if (type == 'pdf') {
-          PdfDocument document =
-              PdfDocument(inputBytes: File(paths[0]).readAsBytesSync());
-          int pageCount = document.pages.count;
-          PdfTextExtractor extractor = PdfTextExtractor(document);
-
-//Extract all the text from the document.
-          String text = extractor.extractText(startPageIndex: 0);
-          TEXT3 = text;
-
-//Display the text.
-          _showResult(text);
-
-          if (pageCount > 0) {
-            setState(() {
-              _selectedFile3 = File(paths[0]);
-              // print('@@@@@PageCount of the pdf:$_pagecount');
-              // print('########Extracted Text from pdf:${text}');
-              _pagecount = pageCount;
-            });
-          } else {
-            //TODO: Pop up <Please select another file>
-          }
-        } else {
-          setState(() {});
-        }
-      }
     }
   }
 
@@ -254,6 +163,8 @@ class _MyHomePageState extends State<MyHomePage> {
           String pagesFullyMatched = '', pagesNotMatched = '';
           for (int i = 0; i < pageCount; i++) {
             String text = extractor.extractText(startPageIndex: i);
+            TEXT2 = text;
+            print('TEXT 2:$TEXT2');
             if (TEXT.contains(text)) {
               pagesFullyMatched = pagesFullyMatched + (i + 1).toString() + ', ';
             } else {
@@ -292,43 +203,12 @@ class _MyHomePageState extends State<MyHomePage> {
       _selectedFile3 = null;
       TEXT = '';
       TEXT2 = '';
-      TEXT3 = '';
     });
-  }
-
-  checkStringEquality(String string1, String string2) {
-    if (string1 == string2) {
-      print('text are identical');
-    } else {
-      // Compare strings using relevant comparison techniques
-      // For example, you can use the Levenshtein distance algorithm
-      double similarityPercentage = calculateSimilarity(string1, string2);
-
-      if (similarityPercentage > 0.8) {
-        print('text are relevant');
-      } else {
-        print('text are not the same or relevant');
-      }
-    }
-  }
-
-  double calculateSimilarity(String string1, String string2) {
-    // Implement a string comparison algorithm here
-    // For example, you can use the Levenshtein distance algorithm
-    // to calculate the similarity percentage between the two strings
-    // There are also other algorithms and libraries available for string comparison
-
-    // Placeholder implementation that compares the lengths of the strings
-    double similarity = (string1.length <= string2.length)
-        ? string1.length / string2.length
-        : string2.length / string1.length;
-
-    return similarity;
   }
 
   Future<void> getPdfData() async {
     final url =
-        Uri.parse('http://192.168.0.173:8081/api/printables/copyrighted_data/');
+        Uri.parse('http://192.168.0.173:8085/api/printables/copyrighted_data/');
     final res = await http.get(url, headers: {
       'Content-type': 'application/json',
       'Accept': 'application/json',
@@ -340,10 +220,49 @@ class _MyHomePageState extends State<MyHomePage> {
     for (var i = 0; i < data.length; i++) {
       PdfData.add(CopyRightedPdfData.fromJson(data[i]));
     }
+    for (var i = 0; i < PdfData.length; i++) {
+      selected = PdfData[i];
+    }
     setState(() {
       print("FILEEEEE:${PdfData[0].file}");
       _pdfData = PdfData;
     });
+  }
+
+  void calculateStringSimilarity(String string1, String string2) {
+    PrettyDiffText(
+        newText: string1,
+        oldText: string2,
+        // red background text is extra text added by teacher in pdf and [missing in teacher pdf]
+        addedTextStyle: const TextStyle(
+            backgroundColor: Colors.green, fontSize: 18, color: Colors.white),
+        // green background text is missing text from teacher pdf and[extra in database]
+        deletedTextStyle: const TextStyle(
+            backgroundColor: Colors.red, fontSize: 18, color: Colors.white));
+    final double similarityPercentage =
+        StringSimilarity.compareTwoStrings(string1, string2) * 100;
+    print('percent:${similarityPercentage.ceil()}');
+    Percent = "Similarity Percent : ${similarityPercentage.ceil().toString()}";
+
+    // return similarityPercentage;
+  }
+
+  String Database = "My name is usama Gangrekar";
+  String Teacher = "usama that's text";
+  bool checkWordSimilarity() {
+    Set<String> words1 = Database.split(' ').toSet();
+    Set<String> words2 = Teacher.split(' ').toSet();
+
+    for (String word in words1) {
+      if (words2.contains(word)) {
+        return true;
+        // Word is present in multiple words, show error
+      }
+      // ignore: avoid_print
+      print("word is :$word");
+    }
+
+    return false; // No word is present in multiple words
   }
 
   @override
@@ -393,7 +312,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: Text(
                     _selectedFile == null
                         ? ''
-                        : "Database pdf=>${_pdfData[0].file}",
+                        : "Database pdf=>${_pdfData[0].name}",
                     style: const TextStyle(color: Colors.green),
                   ),
                 ),
@@ -424,39 +343,12 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: Text(
                       _selectedFile4 == null
                           ? ''
-                          : "Teacher\'s pdf=>${_selectedFile4!.path.split("/").last.toString()}",
+                          : "Teacher's pdf=>${_selectedFile4!.path.split("/").last.toString()}",
                       style: const TextStyle(color: Colors.green)),
                 ),
                 const SizedBox(
                   height: 10,
                 ),
-                // NeoPopTiltedButton(
-                //     isFloating: true,
-                //     onTapUp: () => getFiles2('pdf'),
-                //     decoration: const NeoPopTiltedButtonDecoration(
-                //         color: Colors.black,
-                //         plunkColor: Colors.green,
-                //         shadowColor: Colors.black,
-                //         showShimmer: true),
-                //     child: const Padding(
-                //       padding:
-                //           EdgeInsets.symmetric(horizontal: 50, vertical: 10),
-                //       child: Text(
-                //         'Cover Page',
-                //         style: TextStyle(color: Colors.white),
-                //       ),
-                //     )),
-                // const SizedBox(
-                //   height: 10,
-                // ),
-                // Container(
-                //   decoration: BoxDecoration(border: Border.all(width: 2)),
-                //   child: Text(
-                //       _selectedFile3 == null
-                //           ? ''
-                //           : "Cover Pdf:${_selectedFile3!.path.split("/").last.toString()}",
-                //       style: TextStyle(color: Colors.green)),
-                // ),
                 const SizedBox(
                   height: 10,
                 ),
@@ -482,23 +374,53 @@ class _MyHomePageState extends State<MyHomePage> {
                 const SizedBox(
                   height: 20,
                 ),
-                // if (TEXT.contains(TEXT2))
-                //   Padding(
-                //     padding: const EdgeInsets.all(8.0),
-                //     child: Container(
-                //         padding: const EdgeInsets.all(10),
-                //         decoration: BoxDecoration(
-                //             border: Border.all(width: 3, color: Colors.red)),
-                //         child: const Text('100% Same Content',
-                //             style: TextStyle(color: Colors.red))),
-                //   ),
                 Text(TEXT4),
                 Text(TEXT5),
-                Column(children: [
-                  Container(
-                    child: checkStringEquality(TEXT, TEXT2),
-                  )
-                ]),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(border: Border.all(width: 2)),
+                    child: PrettyDiffText(
+                        newText: TEXT2,
+                        oldText: TEXT,
+                        // red background text is extra text added by teacher in pdf and [missing in teacher pdf]
+                        addedTextStyle: const TextStyle(
+                            backgroundColor: Colors.green,
+                            fontSize: 18,
+                            color: Colors.white),
+                        // green background text is missing text from teacher pdf and[extra in database]
+                        deletedTextStyle: const TextStyle(
+                            backgroundColor: Colors.red,
+                            fontSize: 18,
+                            color: Colors.white)),
+                  ),
+                ),
+                ElevatedButton(
+                    onPressed: () => calculateStringSimilarity(TEXT2, TEXT),
+                    child: const Text('Check percentage')),
+                Text(
+                  Percent,
+                  style: const TextStyle(color: Colors.black),
+                ),
+                if (TEXT.contains(Teacher))
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                            border: Border.all(width: 3, color: Colors.red)),
+                        child: const Text('Unwanted Word Found',
+                            style: TextStyle(color: Colors.red))),
+                  ),
+                Text('Paragraph 1: $Database'),
+                Text('Paragraph 2: $Teacher'),
+                const SizedBox(height: 16),
+                if (checkWordSimilarity())
+                  const Text(
+                    'Unwanted Word Found',
+                    style: TextStyle(color: Colors.red),
+                  ),
               ],
             ),
           ),

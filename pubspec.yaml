@@ -39,7 +39,6 @@ dependencies:
   google_ml_kit: ^0.7.3
   image_picker: ^0.8.4+9
   pdf: ^2.1.0
-  excel: ^2.0.1
   fluttertoast: ^8.2.1
   syncfusion_flutter_pdf: ^21.2.4
   permission_handler: ^10.2.0
@@ -50,6 +49,10 @@ dependencies:
   neopop: ^1.0.2
   shared_preferences: ^2.1.1
   http: ^0.13.5
+  pretty_diff_text: ^1.0.0
+  string_similarity: ^2.0.0
+
+
 
 
 
