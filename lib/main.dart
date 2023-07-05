@@ -12,7 +12,7 @@ import 'package:flutter/services.dart';
 
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'dart:io';
+
 import 'package:neopop/neopop.dart';
 
 import 'package:http/http.dart' as http;
@@ -60,6 +60,10 @@ class _MyHomePageState extends State<MyHomePage> {
       _selectedFile4 = null;
   List<CopyRightedPdfData> _pdfData = [];
   CopyRightedPdfData? selected;
+  List<String> s2 = [];
+  Uint8List? _documentBytes;
+  String Database = "chair table computer chair";
+  String Teacher = "desk chair pen";
 
   @override
   void initState() {
@@ -75,8 +79,8 @@ class _MyHomePageState extends State<MyHomePage> {
           return AlertDialog(
             title: Column(
               children: [
-                const Text('Extracted Text From Pdf,'),
-                Text("Pdf pages count:${_pagecount.toString()}."),
+                const Text('Extracted text from pdf,'),
+                Text("pdf pages count:${_pagecount.toString()}."),
               ],
             ),
             content: Scrollbar(
@@ -108,8 +112,6 @@ class _MyHomePageState extends State<MyHomePage> {
     return status.isGranted;
   }
 
-  Uint8List? _documentBytes;
-
 // for extract text from pdf and
   dynamic getFiles(type) async {
     _documentBytes = await http.readBytes(Uri.parse(_pdfData[0].file));
@@ -120,7 +122,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
     PdfTextExtractor extractor = PdfTextExtractor(document);
 
-//Extract all the text from the document.
     String text = extractor.extractText();
     TEXT = text;
 
@@ -131,8 +132,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (pageCount > 0) {
       setState(() {
         _selectedFile = _pdfData[0].name.toString() as File;
-        // print('@@@@@PageCount of the pdf:$_pagecount');
-        // print('@@@@@ Extracted Text from Database:${text}');
+
         _pagecount = pageCount;
       });
     } else {
@@ -160,6 +160,7 @@ class _MyHomePageState extends State<MyHomePage> {
               PdfDocument(inputBytes: File(paths[0]).readAsBytesSync());
           int pageCount = document.pages.count;
           PdfTextExtractor extractor = PdfTextExtractor(document);
+
           String pagesFullyMatched = '', pagesNotMatched = '';
           for (int i = 0; i < pageCount; i++) {
             String text = extractor.extractText(startPageIndex: i);
@@ -230,15 +231,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void calculateStringSimilarity(String string1, String string2) {
-    PrettyDiffText(
-        newText: string1,
-        oldText: string2,
-        // red background text is extra text added by teacher in pdf and [missing in teacher pdf]
-        addedTextStyle: const TextStyle(
-            backgroundColor: Colors.green, fontSize: 18, color: Colors.white),
-        // green background text is missing text from teacher pdf and[extra in database]
-        deletedTextStyle: const TextStyle(
-            backgroundColor: Colors.red, fontSize: 18, color: Colors.white));
     final double similarityPercentage =
         StringSimilarity.compareTwoStrings(string1, string2) * 100;
     print('percent:${similarityPercentage.ceil()}');
@@ -247,22 +239,48 @@ class _MyHomePageState extends State<MyHomePage> {
     // return similarityPercentage;
   }
 
-  String Database = "My name is usama Gangrekar";
-  String Teacher = "usama that's text";
+  List<String> uniqueList = [];
+  List<String> uniqueList2 = [];
   bool checkWordSimilarity() {
     Set<String> words1 = Database.split(' ').toSet();
     Set<String> words2 = Teacher.split(' ').toSet();
 
     for (String word in words1) {
       if (words2.contains(word)) {
+        print("common word is :$word");
+        if (!s2.contains(word)) {
+          s2.add(word);
+        }
+      }
+    }
+    for (String word in words2) {
+      if (words1.contains(word)) {
         return true;
         // Word is present in multiple words, show error
       }
-      // ignore: avoid_print
-      print("word is :$word");
     }
 
     return false; // No word is present in multiple words
+  }
+
+  bool checkWordSimilarity2() {
+    Set<String> words1 = Database.split(' ').toSet();
+    Set<String> words2 = Teacher.split(' ').toSet();
+    for (String word in words1) {
+      if (!words2.contains(word)) {
+        if (!uniqueList.contains(word)) {
+          uniqueList.add(word);
+        }
+      }
+    }
+    for (String word in words2) {
+      if (!words1.contains(word)) {
+        if (!uniqueList2.contains(word)) {
+          uniqueList2.add(word);
+        }
+      }
+    }
+    return true; // No word is present in multiple words
   }
 
   @override
@@ -278,7 +296,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
         ),
-        title: const Text('Gradient AppBar'),
+        title: const Text('OCR'),
       ),
       body: Container(
         color: Colors.white,
@@ -312,7 +330,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: Text(
                     _selectedFile == null
                         ? ''
-                        : "Database pdf=>${_pdfData[0].name}",
+                        : "Database Pdf=> ${_pdfData[0].name}",
                     style: const TextStyle(color: Colors.green),
                   ),
                 ),
@@ -331,7 +349,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       padding:
                           EdgeInsets.symmetric(horizontal: 50, vertical: 10),
                       child: Text(
-                        'Teacher\'s pdf',
+                        "Teacher's pdf",
                         style: TextStyle(color: Colors.white),
                       ),
                     )),
@@ -345,12 +363,6 @@ class _MyHomePageState extends State<MyHomePage> {
                           ? ''
                           : "Teacher's pdf=>${_selectedFile4!.path.split("/").last.toString()}",
                       style: const TextStyle(color: Colors.green)),
-                ),
-                const SizedBox(
-                  height: 10,
-                ),
-                const SizedBox(
-                  height: 10,
                 ),
                 const SizedBox(
                   height: 10,
@@ -372,55 +384,76 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                     )),
                 const SizedBox(
-                  height: 20,
+                  height: 10,
                 ),
                 Text(TEXT4),
                 Text(TEXT5),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(border: Border.all(width: 2)),
-                    child: PrettyDiffText(
-                        newText: TEXT2,
-                        oldText: TEXT,
-                        // red background text is extra text added by teacher in pdf and [missing in teacher pdf]
-                        addedTextStyle: const TextStyle(
-                            backgroundColor: Colors.green,
-                            fontSize: 18,
-                            color: Colors.white),
-                        // green background text is missing text from teacher pdf and[extra in database]
-                        deletedTextStyle: const TextStyle(
-                            backgroundColor: Colors.red,
-                            fontSize: 18,
-                            color: Colors.white)),
-                  ),
-                ),
-                ElevatedButton(
-                    onPressed: () => calculateStringSimilarity(TEXT2, TEXT),
-                    child: const Text('Check percentage')),
+                // Padding(
+                //   padding: const EdgeInsets.all(8.0),
+                //   child: Container(
+                //     padding: const EdgeInsets.all(10),
+                //     decoration: BoxDecoration(border: Border.all(width: 2)),
+                //     child: PrettyDiffText(
+                //         newText: Teacher,
+                //         oldText: Database,
+                //         // red background text is extra text added by teacher in pdf and [missing in teacher pdf]
+                //         addedTextStyle: const TextStyle(
+                //             backgroundColor: Colors.pink,
+                //             fontSize: 18,
+                //             color: Colors.white),
+                //         // green background text is missing text from teacher pdf and[extra in database]
+                //         deletedTextStyle: const TextStyle(
+                //             backgroundColor: Colors.amber,
+                //             fontSize: 18,
+                //             color: Colors.white)),
+                //   ),
+                // ),
+                // ElevatedButton(
+                //     onPressed: () =>
+                //         calculateStringSimilarity(Teacher, Database),
+                //     child: const Text('Check percentage')),
+                // Text(
+                //   " ${Percent}%",
+                //   style: const TextStyle(color: Colors.black),
+                // ),
                 Text(
-                  Percent,
-                  style: const TextStyle(color: Colors.black),
+                  'DataBase: $Database',
+                  style: TextStyle(fontSize: 20),
                 ),
-                if (TEXT.contains(Teacher))
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                            border: Border.all(width: 3, color: Colors.red)),
-                        child: const Text('Unwanted Word Found',
-                            style: TextStyle(color: Colors.red))),
-                  ),
-                Text('Paragraph 1: $Database'),
-                Text('Paragraph 2: $Teacher'),
+                Text('Teacher: $Teacher', style: TextStyle(fontSize: 20)),
                 const SizedBox(height: 16),
                 if (checkWordSimilarity())
-                  const Text(
-                    'Unwanted Word Found',
-                    style: TextStyle(color: Colors.red),
+                  Container(
+                    padding: EdgeInsets.all(10),
+                    decoration: BoxDecoration(border: Border.all()),
+                    child: Text(
+                      "Common Words:${s2.toString()}",
+                      style: TextStyle(color: Colors.red, fontSize: 20),
+                    ),
                   ),
+                const SizedBox(
+                  height: 10,
+                ),
+                if (checkWordSimilarity2())
+                  Container(
+                    padding: EdgeInsets.all(10),
+                    decoration: BoxDecoration(border: Border.all()),
+                    child: Text(
+                      "Extra in database: ${uniqueList.toString()}",
+                      style: TextStyle(color: Colors.black, fontSize: 20),
+                    ),
+                  ),
+                const SizedBox(
+                  height: 10,
+                ),
+                Container(
+                  padding: EdgeInsets.all(10),
+                  decoration: BoxDecoration(border: Border.all()),
+                  child: Text(
+                    "Extra in teacher: ${uniqueList2.toString()}",
+                    style: TextStyle(color: Colors.black, fontSize: 20),
+                  ),
+                ),
               ],
             ),
           ),
