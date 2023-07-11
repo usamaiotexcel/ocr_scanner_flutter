@@ -52,6 +52,7 @@ dependencies:
   pretty_diff_text: ^1.0.0
   string_similarity: ^2.0.0
   rive: ^0.9.1
+  smooth_star_rating: ^1.1.1
 
 
 

@@ -19,6 +19,7 @@ import 'package:http/http.dart' as http;
 import './copyRightedPdfData.dart';
 import 'package:pretty_diff_text/pretty_diff_text.dart';
 import 'package:string_similarity/string_similarity.dart';
+import 'package:smooth_star_rating/smooth_star_rating.dart';
 
 void main() {
   runApp(const MyApp());
@@ -64,6 +65,16 @@ class _MyHomePageState extends State<MyHomePage> {
   Uint8List? _documentBytes;
   String Database = "chair table computer chair";
   String Teacher = "desk chair pen";
+  double _rating = 0;
+  String _selectedOption = '';
+
+  Map<double, String> ratingOptions = {
+    1: 'Option A',
+    2: 'Option B',
+    3: 'Option C',
+    4: 'Option D',
+    5: 'Option E',
+  };
 
   @override
   void initState() {
